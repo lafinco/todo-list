@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, StatusBar, TextInput, Dimensions, Platform, ScrollView } from 'react-native';
+import { AsyncStorage, StyleSheet, Text, View, StatusBar, TextInput, Dimensions, Platform, ScrollView } from 'react-native';
 import { AppLoading } from "expo";
 import ToDo from "./ToDo";
 import uuid from "uuid/v1";
@@ -8,12 +8,6 @@ import PropTypes from "prop-types";
 const {height, width} = Dimensions.get("window");
 
 export default class App extends React.Component {
-
-  static propTypes = {
-    text : PropTypes.string.isRequired,
-    isCompleted : PropTypes.bool.isRequired,
-    delete: PropTypes.func.isRequired
-  }
 
   state = {
     newToDo : "",
@@ -47,7 +41,7 @@ export default class App extends React.Component {
               onSubmitEditing={this._addToDo}
               />
               <ScrollView contentContainerStyle={styles.toDos}>
-                {Object.values(toDos).map(toDo => 
+                {Object.values(toDos).reverse().map(toDo => 
                   <ToDo key={toDo.id} 
                   deleteToDo={this._deleteToDo}
                   uncompletedToDo={this._uncompletedToDo}
@@ -68,10 +62,20 @@ export default class App extends React.Component {
     });
   }
 
-  _loadToDos = () => {
-    this.setState({
-      loadedToDos : true
-    });
+  _loadToDos = async () => {
+
+    try{
+      const toDos = await AsyncStorage.getItem("toDos");
+      const parsedToDos = JSON.parse(toDos);
+      this.setState({
+        loadedToDos : true,
+        toDos : parsedToDos
+      });
+    }catch(err){
+      console.log(err);
+    }
+
+    
   }
 
   _addToDo = () => {
@@ -98,6 +102,8 @@ export default class App extends React.Component {
           }          
         }
 
+        this._saveToDos(newState.toDos);
+
         return { ...newState };
       });
       
@@ -113,6 +119,8 @@ export default class App extends React.Component {
         ...prevState,
         ...toDos
       };
+
+      this._saveToDos(newState.toDos);
 
       return { ...newState }
     });
@@ -130,6 +138,8 @@ export default class App extends React.Component {
           }
         }
       };
+
+      this._saveToDos(newState.toDos);
       
       return { ...newState }; 
     });
@@ -147,6 +157,8 @@ export default class App extends React.Component {
           }
         }
       };
+
+      this._saveToDos(newState.toDos);
       
       return { ...newState }; 
     });
@@ -164,9 +176,15 @@ export default class App extends React.Component {
           }
         }
       };
+
+      this._saveToDos(newState.toDos);
       
       return { ...newState }; 
     });
+  }
+
+  _saveToDos = (newToDos) =>{
+    const saveToDos = AsyncStorage.setItem("toDos", JSON.stringify(newToDos));
   }
 } 
 
